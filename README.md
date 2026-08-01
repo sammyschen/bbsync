@@ -22,7 +22,7 @@ Requires Python 3.11+ ([python.org](https://www.python.org/downloads/)).
 **macOS** (Terminal):
 
 ```bash
-git clone https://github.com/sammyiserious/bbsync
+git clone https://github.com/sammyschen/bbsync
 cd bbsync
 python3 -m venv .venv
 .venv/bin/pip install -e .
@@ -42,7 +42,7 @@ echo "alias bbsync=\"$PWD/.venv/bin/bbsync\"" >> ~/.zshrc
 **Windows** (PowerShell):
 
 ```powershell
-git clone https://github.com/sammyiserious/bbsync
+git clone https://github.com/sammyschen/bbsync
 cd bbsync
 py -m venv .venv
 .venv\Scripts\pip install -e .
