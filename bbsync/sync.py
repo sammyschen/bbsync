@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 
 from .client import BBClient, BBError, Forbidden
-from .config import BASE_URL, Config, CourseEntry
+from .config import Config, CourseEntry
 from .manifest import Manifest
 
 log = logging.getLogger("bbsync")
@@ -113,7 +113,7 @@ def _walk(
         if handler in _FILE_TYPES:
             _download_attachments(client, course_id, item, title, dir_path, manifest, stats, claimed)
         elif handler in _LINK_TYPES:
-            _record_link(course_id, course_name, item, title,
+            _record_link(client.base_url, course_id, course_name, item, title,
                          dir_path, course_dir, manifest, stats)
 
         if item.get("hasChildren"):
@@ -201,6 +201,7 @@ def _download_attachments(
 
 
 def _record_link(
+    base_url: str,
     course_id: str,
     course_name: str,
     item: dict,
@@ -211,7 +212,7 @@ def _record_link(
     stats: Stats,
 ) -> None:
     url = (item.get("contentHandler") or {}).get("url") or (
-        f"{BASE_URL}/webapps/blackboard/execute/blti/launchLink"
+        f"{base_url}/webapps/blackboard/execute/blti/launchLink"
         f"?course_id={course_id}&content_id={item['id']}"
     )
     if not _VIDEO_PAT.search(f"{title} {url}"):

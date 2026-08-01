@@ -651,7 +651,7 @@ async function refreshStatus() {
   if (!status.setup_complete && s.logged_in !== null) {
     banner.hidden = false;
     if (!s.logged_in) {
-      text.innerHTML = "<strong>First run.</strong> Sign in with your Imperial account — a browser window will open for SSO + MFA.";
+      text.innerHTML = `<strong>First run.</strong> Sign in with your ${status.base_url} account — a browser window will open for SSO + MFA.`;
       btn.textContent = "Sign in to Blackboard";
       btn.onclick = () => startJob("/api/login");
     } else {

@@ -20,18 +20,21 @@ from .sync import run_sync, update_course_list
 log = logging.getLogger("bbsync")
 
 
-def cmd_login(_args) -> int:
+def cmd_login(args) -> int:
     config = Config.load()
-    print("A browser window will open — log in with your Imperial account (SSO + MFA).")
+    if args.url:
+        config.base_url = args.url.rstrip("/")
+        config.save()
+    print(f"A browser window will open — log in with your {config.base_url} account (SSO + MFA).")
     with auth.browser(headless=False) as ctx:
-        user = auth.ensure_session(ctx, interactive=True)
+        user = auth.ensure_session(ctx, config.base_url, interactive=True)
         if not user:
             print("Login did not complete within 5 minutes. Try again with: bbsync login")
             return 1
         name = user.get("userName") or user.get("id")
         print(f"Logged in as {name}. Session saved for future headless runs.\n")
 
-        client = BBClient(ctx)
+        client = BBClient(ctx, config.base_url)
         update_course_list(client, config, user["id"])
 
     _print_courses(config)
@@ -46,12 +49,12 @@ def cmd_sync(_args) -> int:
     manifest = Manifest.load()
     try:
         with auth.browser(headless=True) as ctx:
-            user = auth.ensure_session(ctx)
+            user = auth.ensure_session(ctx, config.base_url)
             if not user:
                 log.error("Blackboard session expired — run 'bbsync login' to sign in again.")
                 notify("bbsync", "Blackboard session expired — run 'bbsync login' in a terminal.")
                 return 2
-            client = BBClient(ctx)
+            client = BBClient(ctx, config.base_url)
             stats = run_sync(client, config, manifest, user["id"])
     except Exception as exc:  # includes a locked browser profile from a concurrent run
         log.error("sync failed: %s", exc)
@@ -202,11 +205,16 @@ def main(argv: list[str] | None = None) -> None:
 
     parser = argparse.ArgumentParser(
         prog="bbsync",
-        description="Download and organise Imperial Blackboard course files.",
+        description="Download and organise Blackboard Ultra course files.",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    sub.add_parser("login", help="open a browser to sign in once (SSO + MFA)")
+    p = sub.add_parser("login", help="open a browser to sign in once (SSO + MFA)")
+    p.add_argument(
+        "--url", metavar="URL",
+        help="Blackboard Ultra base URL, e.g. https://bb.example.ac.uk "
+             "(defaults to bb.imperial.ac.uk on first run; remembered after that)",
+    )
     sub.add_parser("sync", help="download new/changed files now")
     p = sub.add_parser("courses", help="list courses; enable/disable syncing per course")
     p.add_argument("--enable", metavar="NAME_OR_ID")

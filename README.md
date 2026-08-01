@@ -1,10 +1,12 @@
 # bbsync
 
-Automatically downloads your lecture files from Imperial's Blackboard
-(`bb.imperial.ac.uk`) and organises them into a clean local folder tree.
+Automatically downloads your lecture files from Blackboard Ultra and
+organises them into a clean local folder tree. Defaults to Imperial College
+London (`bb.imperial.ac.uk`) but works with **any Blackboard Ultra
+instance** — see [Using a different institution](#using-a-different-institution).
 Works on **macOS and Windows**.
 
-- Mirrors each course's Blackboard folder structure under `Documents/ImperialNotes/`
+- Mirrors each course's Blackboard folder structure under `Documents/BlackboardNotes/`
 - Downloads lecture slides, notes, problem sheets and assignment files
 - Collects Panopto / video links into a `videos.md` per course (videos aren't downloaded)
 - Never re-downloads unchanged files; picks up updated versions automatically
@@ -28,7 +30,7 @@ python3 -m venv .venv
 .venv/bin/pip install -e .
 .venv/bin/playwright install chromium
 
-.venv/bin/bbsync login      # opens a browser — sign in with Imperial SSO + MFA
+.venv/bin/bbsync login      # opens a browser — sign in with your institution's SSO + MFA
 .venv/bin/bbsync sync       # first download (may take a while)
 .venv/bin/bbsync schedule install   # auto-sync every 4h from now on
 ```
@@ -48,7 +50,7 @@ py -m venv .venv
 .venv\Scripts\pip install -e .
 .venv\Scripts\playwright install chromium
 
-.venv\Scripts\bbsync login      # opens a browser — sign in with Imperial SSO + MFA
+.venv\Scripts\bbsync login      # opens a browser — sign in with your institution's SSO + MFA
 .venv\Scripts\bbsync sync       # first download (may take a while)
 .venv\Scripts\bbsync schedule install   # auto-sync every 4h from now on
 ```
@@ -57,7 +59,7 @@ py -m venv .venv
 
 | Command | What it does |
 |---|---|
-| `bbsync login` | Open a browser to sign in once. The session is saved and reused headlessly for weeks. |
+| `bbsync login` | Open a browser to sign in once. `--url` sets the Blackboard instance (first run only). Session is saved and reused headlessly for weeks. |
 | `bbsync sync` | Download new/changed files right now. |
 | `bbsync courses` | List courses. `--disable "Maths"` / `--enable "Maths"` to control which sync. |
 | `bbsync index` | Build the search index (one-off; afterwards it updates itself after each sync). |
@@ -81,14 +83,28 @@ The server binds to `127.0.0.1` only and rejects requests from any other
 host or origin — nothing is exposed to the network. `--port` picks another
 port; `--no-browser` skips opening a tab (useful if you keep it running).
 
+## Using a different institution
+
+bbsync talks to Blackboard's own REST API, so it works anywhere Blackboard
+Ultra is deployed — it isn't tied to Imperial. Point it at your institution's
+Blackboard URL the first time you sign in:
+
+```bash
+bbsync login --url https://blackboard.your-university.edu
+```
+
+That's remembered in `config.toml` for every command after that (`sync`,
+`dashboard`, the background schedule, …) — you only set it once.
+
 ## Configuration
 
 `~/.bbsync/config.toml` (macOS) / `C:\Users\<you>\.bbsync\config.toml` (Windows) —
 created after first login:
 
 ```toml
-dest = "/Users/sammy/Documents/ImperialNotes"  # where files go
-interval_hours = 4                              # background sync frequency
+dest = "/Users/sammy/Documents/BlackboardNotes"     # where files go
+interval_hours = 4                                   # background sync frequency
+base_url = "https://bb.imperial.ac.uk"               # your institution's Blackboard Ultra
 
 [courses."_12345_1"]
 name = "Introduction to Machine Learning"
@@ -141,9 +157,13 @@ just run `bbsync login` again.
 ## How it works
 
 Playwright keeps a persistent Chromium profile in `~/.bbsync/browser-profile`,
-so your Microsoft SSO cookies survive between runs. All Blackboard calls go
+so your SSO cookies survive between runs. All Blackboard calls go
 through that browser context against Blackboard's own REST API
 (`/learn/api/public/v1/...` — the same endpoints the Blackboard web app uses),
 so bbsync only ever sees content your account can already access.
 `~/.bbsync/manifest.json` records every downloaded attachment so syncs are
 idempotent.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

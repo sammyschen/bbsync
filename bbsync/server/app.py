@@ -39,22 +39,23 @@ def _remember_session(user: dict | None) -> None:
 
 def _check_session_job(job: Job) -> str:
     log.info("checking Blackboard session…")
+    config = Config.load()
     with auth.browser(headless=True) as ctx:
-        user = auth.ensure_session(ctx)
+        user = auth.ensure_session(ctx, config.base_url)
     _remember_session(user)
     return "signed in" if user else "signed out"
 
 
 def _login_job(job: Job) -> str:
     config = Config.load()
-    log.info("a browser window is opening — sign in with your Imperial account")
+    log.info("a browser window is opening — sign in with your %s account", config.base_url)
     with auth.browser(headless=False) as ctx:
-        user = auth.ensure_session(ctx, interactive=True)
+        user = auth.ensure_session(ctx, config.base_url, interactive=True)
         _remember_session(user)
         if not user:
             raise RuntimeError("login was not completed — try again")
         log.info("signed in, discovering courses…")
-        update_course_list(BBClient(ctx), config, user["id"])
+        update_course_list(BBClient(ctx, config.base_url), config, user["id"])
     n = len(Config.load().courses)
     return f"signed in as {session_state['user']} — {n} courses found"
 
@@ -63,11 +64,11 @@ def _sync_job(job: Job) -> str:
     config = Config.load()
     manifest = Manifest.load()
     with auth.browser(headless=True) as ctx:
-        user = auth.ensure_session(ctx)
+        user = auth.ensure_session(ctx, config.base_url)
         _remember_session(user)
         if not user:
             raise RuntimeError("Blackboard session expired — sign in again")
-        stats = run_sync(BBClient(ctx), config, manifest, user["id"])
+        stats = run_sync(BBClient(ctx, config.base_url), config, manifest, user["id"])
     manifest.mark_synced()
     manifest.save()
     if textindex.index_exists():
@@ -138,6 +139,7 @@ def api_status():
     return {
         "version": __version__,
         "dest": str(config.dest),
+        "base_url": config.base_url,
         "interval_hours": config.interval_hours,
         "session": session_state,
         "last_sync": manifest.last_sync,

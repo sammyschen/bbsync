@@ -8,8 +8,6 @@ from pathlib import Path
 
 from playwright.sync_api import BrowserContext
 
-from .config import BASE_URL
-
 log = logging.getLogger("bbsync")
 
 # polite delay between requests, seconds
@@ -29,10 +27,11 @@ class Forbidden(BBError):
 
 
 class BBClient:
-    def __init__(self, ctx: BrowserContext):
+    def __init__(self, ctx: BrowserContext, base_url: str):
         self._req = ctx.request
-        # Flipped to the private SPA API if Imperial's deployment rejects
-        # cookie auth on the public endpoints.
+        self.base_url = base_url
+        # Flipped to the private SPA API if this deployment rejects cookie
+        # auth on the public endpoints.
         self._public = True
 
     def _path(self, path: str) -> str:
@@ -42,11 +41,11 @@ class BBClient:
 
     def _get(self, path: str):
         time.sleep(_REQUEST_DELAY)
-        resp = self._req.get(BASE_URL + self._path(path))
+        resp = self._req.get(self.base_url + self._path(path))
         if resp.status == 401 and self._public and "/learn/api/public/v1/" in path:
             log.info("public API rejected session cookies; falling back to private API")
             self._public = False
-            resp = self._req.get(BASE_URL + self._path(path))
+            resp = self._req.get(self.base_url + self._path(path))
         if resp.status == 401:
             raise AuthExpired("Blackboard session rejected (401)")
         if resp.status == 403:
