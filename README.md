@@ -1,4 +1,8 @@
-# bbsync
+<p align="center">
+  <img src="assets/logo.png" alt="BBSync logo" width="480">
+</p>
+
+<h1 align="center">bbsync</h1>
 
 Automatically downloads your lecture files from Blackboard Ultra and
 organises them into a clean local folder tree. Defaults to Imperial College
